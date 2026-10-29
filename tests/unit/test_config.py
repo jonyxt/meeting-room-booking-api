@@ -18,6 +18,10 @@ VALID_CONFIG = {
     "JWT_EXP_DELTA_SECONDS": 3600,
 }
 
+@pytest.fixture(autouse=True)
+def isolate_settings_environment(monkeypatch):
+    """Изолирует unit-тесты от APP_ENV внешнего окружения."""
+    monkeypatch.delenv("APP_ENV", raising=False)
 
 def make_settings(**overrides):
     """Создаёт настройки без чтения .env-файла."""

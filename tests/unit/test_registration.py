@@ -1,7 +1,8 @@
 import pytest
 
 from unittest.mock import AsyncMock, MagicMock
-from app import models, schemas, services
+from app import models, schemas
+from app.services import auth_service
 
 
 @pytest.mark.asyncio
@@ -15,7 +16,7 @@ async def test_first_registered_user_is_employee(monkeypatch):
         return model
 
     monkeypatch.setattr(
-        services,
+        auth_service,
         "commit_refresh_db",
         fake_commit_refresh_db
     )
@@ -26,7 +27,7 @@ async def test_first_registered_user_is_employee(monkeypatch):
         password="password123"
     )
 
-    user = await services.register_user(session, user_data)
+    user = await auth_service.register_user(session, user_data)
 
     assert user.role == models.UserRole.EMPLOYEE
     session.add.assert_called_once_with(user)

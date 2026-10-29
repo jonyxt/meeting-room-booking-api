@@ -5,7 +5,15 @@ from unittest.mock import AsyncMock, MagicMock
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 
-from app import models, schemas, services
+from app import models, schemas
+from app.services import (
+    auth_service,
+    booking_service,
+    object_lookup,
+    room_service,
+    transactions,
+    user_service,
+)
 
 
 pytestmark = pytest.mark.asyncio
@@ -34,7 +42,7 @@ async def test_commit_refresh_success(session):
 
     model = MagicMock()
 
-    result = await services.commit_refresh_db(
+    result = await transactions.commit_refresh_db(
         model=model,
         error="Conflict",
         session=session,
@@ -56,7 +64,7 @@ async def test_commit_refresh_integrity_error(session):
     )
 
     with pytest.raises(HTTPException) as exc:
-        await services.commit_refresh_db(
+        await transactions.commit_refresh_db(
             model=MagicMock(),
             error="Duplicate user",
             session=session,
@@ -82,7 +90,7 @@ async def test_get_object_by_id_success(session):
     result.scalar_one_or_none.return_value = user
     session.execute.return_value = result
 
-    found = await services.get_db_object_by_id(
+    found = await object_lookup.get_db_object_by_id(
         session, models.User, 15
     )
 
@@ -98,7 +106,7 @@ async def test_get_object_by_id_not_found(session):
     session.execute.return_value = result
 
     with pytest.raises(HTTPException) as exc:
-        await services.get_db_object_by_id(
+        await object_lookup.get_db_object_by_id(
             session, models.User, 999
         )
 
@@ -123,10 +131,10 @@ async def test_login_success(session, monkeypatch):
     create_token = MagicMock(return_value="test-jwt")
 
     monkeypatch.setattr(
-        services.auth, "check_password", check_password
+        auth_service.auth, "check_password", check_password
     )
     monkeypatch.setattr(
-        services.auth, "create_access_token", create_token
+        auth_service.auth, "create_access_token", create_token
     )
 
     credentials = schemas.LoginRequest(
@@ -134,7 +142,7 @@ async def test_login_success(session, monkeypatch):
         password="password123",
     )
 
-    result = await services.login_user(
+    result = await auth_service.login_user(
         session, credentials
     )
 
@@ -168,10 +176,10 @@ async def test_login_invalid_credentials(
     create_token = MagicMock()
 
     monkeypatch.setattr(
-        services.auth, "check_password", check_password
+        auth_service.auth, "check_password", check_password
     )
     monkeypatch.setattr(
-        services.auth, "create_access_token", create_token
+        auth_service.auth, "create_access_token", create_token
     )
 
     credentials = schemas.LoginRequest(
@@ -180,7 +188,7 @@ async def test_login_invalid_credentials(
     )
 
     with pytest.raises(HTTPException) as exc:
-        await services.login_user(session, credentials)
+        await auth_service.login_user(session, credentials)
 
     assert exc.value.status_code == 401
     assert exc.value.detail == "Неверный логин или пароль"
@@ -204,7 +212,7 @@ async def test_booking_past_date(session):
     )
 
     with pytest.raises(HTTPException) as exc:
-        await services.book_room(session, user, data)
+        await booking_service.book_room(session, user, data)
 
     assert exc.value.status_code == 400
     session.scalar.assert_not_awaited()
@@ -224,7 +232,7 @@ async def test_booking_invalid_slot(session):
     )
 
     with pytest.raises(HTTPException) as exc:
-        await services.book_room(session, user, data)
+        await booking_service.book_room(session, user, data)
 
     assert exc.value.status_code == 400
     session.add.assert_not_called()
@@ -241,7 +249,7 @@ async def test_booking_success(session, monkeypatch):
     )
 
     monkeypatch.setattr(
-        services, "commit_refresh_db", commit_mock
+        booking_service, "commit_refresh_db", commit_mock
     )
 
     booking_date = dt.date.today() + dt.timedelta(days=1)
@@ -252,7 +260,7 @@ async def test_booking_success(session, monkeypatch):
         date=booking_date,
     )
 
-    booking = await services.book_room(
+    booking = await booking_service.book_room(
         session, user, data
     )
 
@@ -281,13 +289,13 @@ async def test_booking_info_forbidden(
     booking = models.Booking(id=20, owner_id=8)
 
     monkeypatch.setattr(
-        services,
+        booking_service,
         "get_db_object_by_id",
         AsyncMock(return_value=booking),
     )
 
     with pytest.raises(HTTPException) as exc:
-        await services.book_room_info(
+        await booking_service.book_room_info(
             session, user, booking_id=20
         )
 
@@ -310,12 +318,12 @@ async def test_booking_info_allowed(
     booking = models.Booking(id=20, owner_id=owner_id)
 
     monkeypatch.setattr(
-        services,
+        booking_service,
         "get_db_object_by_id",
         AsyncMock(return_value=booking),
     )
 
-    result = await services.book_room_info(
+    result = await booking_service.book_room_info(
         session, user, booking_id=20
     )
 
@@ -339,13 +347,13 @@ async def test_cancel_other_user_booking_forbidden(
     )
 
     monkeypatch.setattr(
-        services,
+        booking_service,
         "get_db_object_by_id",
         AsyncMock(return_value=booking),
     )
 
     with pytest.raises(HTTPException) as exc:
-        await services.book_room_cancel(
+        await booking_service.book_room_cancel(
             session, user, booking_id=20
         )
 
@@ -367,13 +375,13 @@ async def test_cancel_already_cancelled_booking(
     )
 
     monkeypatch.setattr(
-        services,
+        booking_service,
         "get_db_object_by_id",
         AsyncMock(return_value=booking),
     )
 
     with pytest.raises(HTTPException) as exc:
-        await services.book_room_cancel(
+        await booking_service.book_room_cancel(
             session, user, booking_id=20
         )
 
@@ -401,12 +409,12 @@ async def test_cancel_booking_success(
     )
 
     monkeypatch.setattr(
-        services,
+        booking_service,
         "get_db_object_by_id",
         AsyncMock(return_value=booking),
     )
 
-    result = await services.book_room_cancel(
+    result = await booking_service.book_room_cancel(
         session, user, booking_id=20
     )
 
@@ -434,7 +442,7 @@ async def test_employee_cannot_change_own_role(
     )
 
     monkeypatch.setattr(
-        services,
+        user_service,
         "get_db_object_by_id",
         AsyncMock(return_value=user),
     )
@@ -444,7 +452,7 @@ async def test_employee_cannot_change_own_role(
     )
 
     with pytest.raises(HTTPException) as exc:
-        await services.update_user_by_id(
+        await user_service.update_user_by_id(
             session, 7, data, user
         )
 
@@ -465,7 +473,7 @@ async def test_employee_cannot_update_other_user(
     )
 
     monkeypatch.setattr(
-        services,
+        user_service,
         "get_db_object_by_id",
         AsyncMock(return_value=other_user),
     )
@@ -475,7 +483,7 @@ async def test_employee_cannot_update_other_user(
     )
 
     with pytest.raises(HTTPException) as exc:
-        await services.update_user_by_id(
+        await user_service.update_user_by_id(
             session, 8, data, current_user
         )
 
@@ -495,7 +503,7 @@ async def test_cannot_demote_last_admin(
     session.scalar.return_value = 1
 
     monkeypatch.setattr(
-        services,
+        user_service,
         "get_db_object_by_id",
         AsyncMock(return_value=admin),
     )
@@ -505,7 +513,7 @@ async def test_cannot_demote_last_admin(
     )
 
     with pytest.raises(HTTPException) as exc:
-        await services.update_user_by_id(
+        await user_service.update_user_by_id(
             session, 1, data, admin
         )
 
@@ -559,7 +567,7 @@ async def test_available_rooms_grouped_correctly(session):
     ]
     session.execute.return_value = db_result
 
-    result = await services.get_date_available_bookings(
+    result = await room_service.get_date_available_bookings(
         session,
         dt.date.today() + dt.timedelta(days=1),
     )

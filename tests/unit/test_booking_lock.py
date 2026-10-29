@@ -3,7 +3,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from sqlalchemy.dialects import postgresql
 
-from app import models, services
+from app import models
+from app.services import booking_service
 
 
 @pytest.mark.asyncio
@@ -17,9 +18,9 @@ async def test_cancel_locks_booking_row_before_reading(monkeypatch):
     owner = models.User(id=11, role=models.UserRole.EMPLOYEE)
     booking = models.Booking(id=5, owner_id=11, is_active=True)
     find_booking = AsyncMock(return_value=booking)
-    monkeypatch.setattr(services, "get_db_object_by_id", find_booking)
+    monkeypatch.setattr(booking_service, "get_db_object_by_id", find_booking)
 
-    result = await services.book_room_cancel(session, owner, booking_id=5)
+    result = await booking_service.book_room_cancel(session, owner, booking_id=5)
 
     assert result["status"] == "Бронирование отменено"
     session.execute.assert_awaited_once()

@@ -4,7 +4,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from fastapi import HTTPException
 
-from app import models, schemas, services
+from app import models, schemas
+from app.services import auth_service, booking_service, room_service, user_service
 
 
 pytestmark = pytest.mark.asyncio
@@ -28,14 +29,14 @@ def mock_query_results(session, items):
 
 async def test_get_self_returns_same_user():
     user = models.User(id=7)
-    assert services.get_self(user) is user
+    assert auth_service.get_self(user) is user
 
 
 async def test_get_users_returns_query_results(session):
     users = [models.User(id=1), models.User(id=2)]
     mock_query_results(session, users)
 
-    result = await services.get_users(session)
+    result = await user_service.get_users(session)
 
     assert result["users"] == users
     session.execute.assert_awaited_once()
@@ -45,7 +46,7 @@ async def test_get_all_rooms_info(session):
     rooms = [models.Room(id=1), models.Room(id=2)]
     mock_query_results(session, rooms)
 
-    result = await services.get_all_rooms_info(session)
+    result = await room_service.get_all_rooms_info(session)
 
     assert result["rooms"] == rooms
 
@@ -59,7 +60,7 @@ async def test_get_all_bookings(session, filter_by_date):
 
     date = datetime.date(2027, 1, 15) if filter_by_date else None
 
-    result = await services.get_all_bookings(session, date)
+    result = await booking_service.get_all_bookings(session, date)
 
     assert result["bookings"] == bookings
     session.execute.assert_awaited_once()
@@ -70,7 +71,7 @@ async def test_get_all_user_bookings(session):
     bookings = [models.Booking(id=12, owner_id=7)]
     mock_query_results(session, bookings)
 
-    result = await services.get_all_user_bookings(
+    result = await booking_service.get_all_user_bookings(
         session, user
     )
 
@@ -85,7 +86,7 @@ async def test_available_rooms_empty(session):
     result.all.return_value = []
     session.execute.return_value = result
 
-    data = await services.get_date_available_bookings(
+    data = await room_service.get_date_available_bookings(
         session, datetime.date(2027, 1, 15)
     )
 
@@ -99,7 +100,7 @@ async def test_employee_updates_own_phone(session, monkeypatch):
     )
 
     monkeypatch.setattr(
-        services,
+        user_service,
         "get_db_object_by_id",
         AsyncMock(return_value=user),
     )
@@ -107,11 +108,11 @@ async def test_employee_updates_own_phone(session, monkeypatch):
     save = AsyncMock(
         side_effect=lambda **kwargs: kwargs["model"]
     )
-    monkeypatch.setattr(services, "commit_refresh_db", save)
+    monkeypatch.setattr(user_service, "commit_refresh_db", save)
 
     data = schemas.UpdateUserRequest(phone="79991112233")
 
-    result = await services.update_user_by_id(
+    result = await user_service.update_user_by_id(
         session, 7, data, user
     )
 
@@ -127,7 +128,7 @@ async def test_admin_promotes_another_user(session, monkeypatch):
     )
 
     monkeypatch.setattr(
-        services,
+        user_service,
         "get_db_object_by_id",
         AsyncMock(return_value=employee),
     )
@@ -135,13 +136,13 @@ async def test_admin_promotes_another_user(session, monkeypatch):
     save = AsyncMock(
         side_effect=lambda **kwargs: kwargs["model"]
     )
-    monkeypatch.setattr(services, "commit_refresh_db", save)
+    monkeypatch.setattr(user_service, "commit_refresh_db", save)
 
     data = schemas.UpdateUserRequest(
         role=models.UserRole.ADMIN
     )
 
-    result = await services.update_user_by_id(
+    result = await user_service.update_user_by_id(
         session, 7, data, admin
     )
 
@@ -158,7 +159,7 @@ async def test_admin_demotes_when_multiple_admins(
     session.scalar.return_value = 2
 
     monkeypatch.setattr(
-        services,
+        user_service,
         "get_db_object_by_id",
         AsyncMock(return_value=target),
     )
@@ -166,13 +167,13 @@ async def test_admin_demotes_when_multiple_admins(
     save = AsyncMock(
         side_effect=lambda **kwargs: kwargs["model"]
     )
-    monkeypatch.setattr(services, "commit_refresh_db", save)
+    monkeypatch.setattr(user_service, "commit_refresh_db", save)
 
     data = schemas.UpdateUserRequest(
         role=models.UserRole.EMPLOYEE
     )
 
-    result = await services.update_user_by_id(
+    result = await user_service.update_user_by_id(
         session, 2, data, admin
     )
 
@@ -192,7 +193,7 @@ async def test_admin_rejects_null_fields(
     target = models.User(id=2, role=models.UserRole.EMPLOYEE)
 
     monkeypatch.setattr(
-        services,
+        user_service,
         "get_db_object_by_id",
         AsyncMock(return_value=target),
     )
@@ -200,7 +201,7 @@ async def test_admin_rejects_null_fields(
     data = schemas.UpdateUserRequest(**{field: None})
 
     with pytest.raises(HTTPException) as exc:
-        await services.update_user_by_id(
+        await user_service.update_user_by_id(
             session, 2, data, admin
         )
 

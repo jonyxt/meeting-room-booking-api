@@ -29,50 +29,49 @@ services:
       JWT_EXP_DELTA_SECONDS: ${JWT_EXP_DELTA_SECONDS}
       ALLOW_TEST_DB_RESET: "1"
     entrypoint: ["/bin/sh", "-ec"]
-    command: |
-      python - <<'PY'
-      import subprocess
-      import sys
-      import time
-      import urllib.error
-      import urllib.request
-      # Apply migrations to the isolated test database.
-      subprocess.run(
-          [sys.executable, "-m", "alembic", "upgrade", "head"],
-          check=True,
-      )
-      # Temporary HTTP API stays inside this tests container.
-      server = subprocess.Popen([
-          sys.executable, "-m", "uvicorn", "app.app:app",
-          "--host", "127.0.0.1", "--port", "8000",
-      ])
-
-      try:
-          for _ in range(60):
-              if server.poll() is not None:
-                  sys.exit("Test API exited before becoming ready")
-              try:
-                  with urllib.request.urlopen(
-                      "http://127.0.0.1:8000/openapi.json", timeout=2
-                  ):
-                      break
-              except (urllib.error.URLError, TimeoutError):
-                  time.sleep(1)
-          else:
-              sys.exit("Test API did not become ready")
-
-          result = subprocess.run(
-              [sys.executable, "-m", "pytest", "-q"], check=False
-          )
-          sys.exit(result.returncode)
-      finally:
-          server.terminate()
-          try:
-              server.wait(timeout=10)
-          except subprocess.TimeoutExpired:
-              server.kill()
-              server.wait()
-      PY
+    command:
+      - |
+        python - <<'PY'
+        import subprocess
+        import sys
+        import time
+        import urllib.error
+        import urllib.request
+        subprocess.run(
+            [sys.executable, "-m", "alembic", "upgrade", "head"],
+            check=True,
+        )
+        server = subprocess.Popen([
+            sys.executable, "-m", "uvicorn", "app.app:app",
+            "--host", "127.0.0.1", "--port", "8000",
+        ])
+        try:
+            for _ in range(60):
+                if server.poll() is not None:
+                    sys.exit("Test API exited before becoming ready")
+                try:
+                    with urllib.request.urlopen(
+                        "http://127.0.0.1:8000/openapi.json",
+                        timeout=2,
+                    ):
+                        break
+                except (urllib.error.URLError, TimeoutError):
+                    time.sleep(1)
+            else:
+                sys.exit("Test API did not become ready")
+            result = subprocess.run(
+                [sys.executable, "-m", "pytest", "-q"],
+                check=False,
+            )
+            sys.exit(result.returncode)
+        finally:
+            server.terminate()
+            try:
+                server.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                server.kill()
+                server.wait()
+        PY
     restart: "no"
 
   db:

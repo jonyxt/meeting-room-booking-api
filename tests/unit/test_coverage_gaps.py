@@ -9,7 +9,7 @@ from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.exc import IntegrityError
 
-from app import auth, schemas, services
+from app import auth, schemas, seed_data
 from app import bootstrap_admin
 
 
@@ -33,17 +33,34 @@ async def test_valid_token_for_missing_user_returns_401():
 
 @pytest.mark.asyncio
 async def test_existing_rooms_are_not_seeded_again():
-    """Do not add another set of rooms if the database is already seeded."""
+    """Повторная инициализация не добавляет существующие комнаты и слоты."""
+
     session = MagicMock()
-    session.scalar = AsyncMock(return_value=3)
-    session.commit = AsyncMock()
+    session.execute = AsyncMock()
+    session.flush = AsyncMock()
 
-    await services.initial_rooms_and_time_windows(session)
+    # Три комнаты, у каждой по три существующих слота.
+    existing_objects = []
 
-    session.scalar.assert_awaited_once()
+    for room_id in range(1, 4):
+        existing_objects.append(SimpleNamespace(id=room_id))
+        existing_objects.extend(
+            [room_id * 10 + slot_id for slot_id in range(1, 4)]
+        )
+
+    session.scalar = AsyncMock(side_effect=existing_objects)
+
+    await seed_data.seed_initial_data(session)
+
+    # 3 проверки комнат + 9 проверок слотов.
+    assert session.scalar.await_count == 12
+
+    # Никаких новых записей создаваться не должно.
     session.add.assert_not_called()
-    session.add_all.assert_not_called()
-    session.commit.assert_not_awaited()
+    session.flush.assert_not_awaited()
+
+    # Проверяем выполнение блокировки.
+    session.execute.assert_awaited_once()
 
 
 @pytest.mark.asyncio
