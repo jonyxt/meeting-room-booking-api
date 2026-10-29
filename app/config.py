@@ -65,9 +65,12 @@ class Settings(BaseSettings):
                     "Production не должен использовать тестовую БД"
                 )
 
-            if self.POSTGRES_PASSWORD.lower() in {
-                "postgres", "password", "changeme"
-            }:
+            password = self.POSTGRES_PASSWORD.lower()
+
+            if (
+                    password in {"postgres", "password", "changeme"}
+                    or password.startswith("replace_with")
+            ):
                 raise ValueError(
                     "Недопустимый пароль PostgreSQL для production"
                 )

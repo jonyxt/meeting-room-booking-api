@@ -1,92 +1,14 @@
 services:
-  test_db:
-    image: postgres:16.2-alpine3.19
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: test_db
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d test_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  tests:
-    build: .
-    depends_on:
-      test_db:
-        condition: service_healthy
-    environment:
-      APP_ENV: test
-      BASE_URL: http://127.0.0.1:8000
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: test_db
-      POSTGRES_HOST: test_db
-      POSTGRES_PORT: 5432
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_ALGORITHM: ${JWT_ALGORITHM}
-      JWT_EXP_DELTA_SECONDS: ${JWT_EXP_DELTA_SECONDS}
-      ALLOW_TEST_DB_RESET: "1"
-    entrypoint: ["/bin/sh", "-ec"]
-    command:
-      - |
-        python - <<'PY'
-        import subprocess
-        import sys
-        import time
-        import urllib.error
-        import urllib.request
-        subprocess.run(
-            [sys.executable, "-m", "alembic", "upgrade", "head"],
-            check=True,
-        )
-        server = subprocess.Popen([
-            sys.executable, "-m", "uvicorn", "app.app:app",
-            "--host", "127.0.0.1", "--port", "8000",
-        ])
-        try:
-            for _ in range(60):
-                if server.poll() is not None:
-                    sys.exit("Test API exited before becoming ready")
-                try:
-                    with urllib.request.urlopen(
-                        "http://127.0.0.1:8000/openapi.json",
-                        timeout=2,
-                    ):
-                        break
-                except (urllib.error.URLError, TimeoutError):
-                    time.sleep(1)
-            else:
-                sys.exit("Test API did not become ready")
-            result = subprocess.run(
-                [sys.executable, "-m", "pytest", "-q"],
-                check=False,
-            )
-            sys.exit(result.returncode)
-        finally:
-            server.terminate()
-            try:
-                server.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                server.kill()
-                server.wait()
-        PY
-    restart: "no"
-
   db:
     image: postgres:16.2-alpine3.19
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "127.0.0.1:${POSTGRES_PORT}:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    depends_on:
-      tests:
-        condition: service_completed_successfully
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -94,9 +16,11 @@ services:
       retries: 10
 
   app:
-    build: .
+    build:
+      context: .
+      target: production
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -105,7 +29,7 @@ services:
       seed:
         condition: service_completed_successfully
     environment:
-      APP_ENV: ${APP_ENV:-dev}
+      APP_ENV: dev
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
@@ -115,19 +39,21 @@ services:
       JWT_ALGORITHM: ${JWT_ALGORITHM}
       JWT_EXP_DELTA_SECONDS: ${JWT_EXP_DELTA_SECONDS}
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/openapi.json', timeout=3)"]
-      interval: 5s
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=4).read()"]
+      interval: 10s
       timeout: 5s
-      retries: 12
-      start_period: 5s
+      retries: 3
+      start_period: 20s
 
   migrate:
-    build: .
+    build:
+      context: .
+      target: production
     depends_on:
       db:
         condition: service_healthy
     environment:
-      APP_ENV: ${APP_ENV:-dev}
+      APP_ENV: dev
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
@@ -140,12 +66,14 @@ services:
     restart: "no"
 
   seed:
-    build: .
+    build:
+      context: .
+      target: production
     depends_on:
       migrate:
         condition: service_completed_successfully
     environment:
-      APP_ENV: ${APP_ENV:-dev}
+      APP_ENV: dev
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}

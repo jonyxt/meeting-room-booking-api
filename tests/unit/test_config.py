@@ -137,3 +137,26 @@ def test_production_rejects_default_password():
 def test_unknown_environment_rejected():
     with pytest.raises(ValidationError):
         make_settings(APP_ENV="staging")
+
+
+def test_production_rejects_placeholder_password():
+    with pytest.raises(ValidationError):
+        make_settings(
+            APP_ENV="prod",
+            POSTGRES_DB="booking_db",
+            POSTGRES_HOST="db",
+            POSTGRES_PASSWORD="replace_with_strong_random_password",
+        )
+
+
+def test_production_accepts_valid_settings():
+    settings = make_settings(
+        APP_ENV="prod",
+        POSTGRES_DB="booking_db",
+        POSTGRES_HOST="db",
+        POSTGRES_PASSWORD="example_test_password_12345",
+    )
+
+    assert settings.APP_ENV == "prod"
+    assert settings.POSTGRES_DB == "booking_db"
+    assert settings.POSTGRES_HOST == "db"

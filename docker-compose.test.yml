@@ -1,0 +1,36 @@
+services:
+  test_db:
+    profiles: [ "test" ]
+    image: postgres:16.2-alpine3.19
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: test_db
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d test_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  tests:
+    profiles: [ "test" ]
+    build:
+      context: .
+      target: test
+    depends_on:
+      test_db:
+        condition: service_healthy
+    environment:
+      APP_ENV: test
+      BASE_URL: http://127.0.0.1:8000
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: test_db
+      POSTGRES_HOST: test_db
+      POSTGRES_PORT: 5432
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      JWT_EXP_DELTA_SECONDS: ${JWT_EXP_DELTA_SECONDS}
+      ALLOW_TEST_DB_RESET: "1"
+    command: [ "python", "scripts/run_tests.py" ]
+    restart: "no"
