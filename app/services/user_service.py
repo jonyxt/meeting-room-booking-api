@@ -38,10 +38,6 @@ async def update_user_by_id(
     Поля, которые не были переданы в запросе, не изменяются.
     """
 
-    user = await get_db_object_by_id(
-        session, models.User, user_id
-    )
-
     if current_user.role == models.UserRole.EMPLOYEE:
         if current_user.id != user_id:
             raise HTTPException(
@@ -55,6 +51,10 @@ async def update_user_by_id(
                 detail='Только Администраторы могут менять роли пользователей'
             )
 
+    user = await get_db_object_by_id(
+        session, models.User, user_id
+    )
+
     update_dict = update_data.model_dump(exclude_unset=True)
 
     for field in ('username', 'email', 'role'):
@@ -65,9 +65,11 @@ async def update_user_by_id(
             )
 
     if (
-        update_dict.get('role') == models.UserRole.EMPLOYEE
-        and user.role == models.UserRole.ADMIN
+            update_dict.get('role') == models.UserRole.EMPLOYEE
+            and user.role == models.UserRole.ADMIN
     ):
+        await user_repository.lock_admin_role_changes(session)
+
         admins_count = await user_repository.count_admins(session)
 
         if admins_count == 1:

@@ -241,3 +241,22 @@ def test_cannot_demote_last_admin(api_client, admin_token):
 
     assert response.status_code == 200
     assert response.json()["role"] == "admin"
+
+def test_employee_cannot_enumerate_users_via_update(
+    api_client, create_test_user
+):
+    """Сотрудник не должен определять существование чужого профиля."""
+
+    _, token = create_test_user()
+    other_user, _ = create_test_user()
+
+    headers = auth_headers(token)
+
+    for user_id in (other_user["id"], 999999999):
+        response = api_client.patch(
+            f"/users/{user_id}",
+            headers=headers,
+            json={"phone": "78888888888"},
+        )
+
+        assert response.status_code == 403

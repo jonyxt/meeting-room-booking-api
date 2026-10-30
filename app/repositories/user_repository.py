@@ -1,7 +1,7 @@
 
 """Операции чтения пользователей из базы данных."""
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models
@@ -43,3 +43,12 @@ async def count_admins(
     )
 
     return await session.scalar(query)
+
+async def lock_admin_role_changes(
+    session: AsyncSession,
+) -> None:
+    """Сериализует операции понижения администраторов."""
+
+    await session.execute(
+        text("SELECT pg_advisory_xact_lock(812741099)")
+    )
