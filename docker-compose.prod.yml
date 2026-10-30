@@ -1,0 +1,86 @@
+# Общие настройки FastAPI для production.
+x-app-env: &app-env
+  APP_ENV: prod
+  POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+  POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+  POSTGRES_HOST: db
+  POSTGRES_PORT: "5432"
+  JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+  JWT_ALGORITHM: HS256
+  JWT_EXP_DELTA_SECONDS: ${JWT_EXP_DELTA_SECONDS:-3600}
+
+services:
+  db:
+    image: postgres:16.2-alpine3.19
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  migrate:
+    image: ${APP_IMAGE:?APP_IMAGE is required}
+    environment: *app-env
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+
+  seed:
+    image: ${APP_IMAGE:?APP_IMAGE is required}
+    environment: *app-env
+
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+    command: ["python", "-m", "app.seed_data"]
+    restart: "no"
+
+  app:
+    image: ${APP_IMAGE:?APP_IMAGE is required}
+    restart: unless-stopped
+
+    environment: *app-env
+
+    ports:
+      - "127.0.0.1:${APP_BIND_PORT:-8001}:8000"
+
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      seed:
+        condition: service_completed_successfully
+
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=4).read()"
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  postgres_data:
