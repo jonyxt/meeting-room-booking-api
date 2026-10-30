@@ -6,7 +6,6 @@ from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import URL
 
-
 ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
 
 
@@ -46,15 +45,14 @@ class Settings(BaseSettings):
     def validate_environment(self):
         """Проверяет безопасность настроек окружения."""
 
-        if self.APP_ENV == "test":
-            if (
+        if self.APP_ENV == "test" and (
                 self.POSTGRES_DB != "test_db"
                 or self.POSTGRES_HOST != "test_db"
-            ):
-                raise ValueError(
-                    "Тестовое окружение должно использовать "
-                    "только test_db на хосте test_db"
-                )
+        ):
+            raise ValueError(
+                "Тестовое окружение должно использовать "
+                "только test_db на хосте test_db"
+            )
 
         if self.APP_ENV == "prod":
             if (

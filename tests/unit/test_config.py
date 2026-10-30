@@ -2,10 +2,9 @@
 """Unit-тесты конфигурации приложения."""
 
 import pytest
-
 from pydantic import ValidationError
-from app.config import Settings, get_settings
 
+from app.config import Settings, get_settings
 
 VALID_CONFIG = {
     "POSTGRES_USER": "test_user",

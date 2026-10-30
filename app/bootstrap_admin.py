@@ -6,7 +6,6 @@ from pydantic import ValidationError
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from watchfiles import awatch
 
 from . import auth, models, schemas
 from .database import AsyncSessionLocal, engine

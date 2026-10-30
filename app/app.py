@@ -8,11 +8,10 @@ from fastapi import FastAPI
 
 from .lifespan import lifespan
 from .routers.auth import router as auth_router
-from .routers.users import router as users_router
 from .routers.bookings import router as bookings_router
-from .routers.rooms import router as rooms_router
 from .routers.health import router as health_router
-
+from .routers.rooms import router as rooms_router
+from .routers.users import router as users_router
 
 app = FastAPI(
     title='Booking service',

@@ -8,8 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models, schemas
 from ..repositories import booking_repository
-from .transactions import commit_refresh_db
 from .object_lookup import get_db_object_by_id
+from .transactions import commit_refresh_db
 
 
 async def book_room(
@@ -64,12 +64,14 @@ async def book_room_info(
         session, models.Booking, booking_id
     )
 
-    if current_user.role == models.UserRole.EMPLOYEE:
-        if current_user.id != booking.owner_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail='Недостаточно прав для просмотра брони'
-            )
+    if (
+            current_user.role == models.UserRole.EMPLOYEE
+            and current_user.id != booking.owner_id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Недостаточно прав для просмотра брони'
+        )
 
     return booking
 
@@ -123,12 +125,14 @@ async def book_room_cancel(
         session, models.Booking, booking_id
     )
 
-    if current_user.role == models.UserRole.EMPLOYEE:
-        if current_user.id != booking.owner_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail='Сотрудники могут отменять только свои бронирования'
-            )
+    if (
+            current_user.role == models.UserRole.EMPLOYEE
+            and current_user.id != booking.owner_id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Сотрудники могут отменять только свои бронирования'
+        )
 
     if booking.is_active is False:
         raise HTTPException(

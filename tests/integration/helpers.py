@@ -1,9 +1,8 @@
 """Общие вспомогательные функции интеграционных тестов."""
 
 
-import os
 import datetime
-
+import os
 
 BASE_URL = os.getenv('BASE_URL', 'http://app:8000')
 

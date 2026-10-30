@@ -1,7 +1,7 @@
-import pytest
 import datetime as dt
-
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 
@@ -14,7 +14,6 @@ from app.services import (
     transactions,
     user_service,
 )
-
 
 pytestmark = pytest.mark.asyncio
 

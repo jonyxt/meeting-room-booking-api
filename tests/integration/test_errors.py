@@ -1,8 +1,10 @@
 """Тесты: test_errors."""
 
 
-import pytest
 from uuid import uuid4
+
+import pytest
+
 from tests.integration.helpers import auth_headers, future_date
 
 

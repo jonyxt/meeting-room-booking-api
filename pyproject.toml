@@ -29,7 +29,42 @@ dev = [
     "pytest (>=9.1.1,<10.0.0)",
     "pytest-asyncio (>=1.4.0,<2.0.0)",
     "httpx (>=0.28.1,<0.29.0)",
+    "ruff (>=0.17.3,<0.18.0)",
 ]
 
 [tool.poetry]
 package-mode = false
+
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E4",       # Ошибки импортов
+    "E7",       # Ошибки синтаксического оформления
+    "E9",       # Серьёзные синтаксические ошибки
+    "F",        # Pyflakes: неиспользуемые переменные, импорты
+    "I",        # Порядок импортов
+    "B",        # Потенциальные ошибки (flake8-bugbear)
+    "UP",       # Современный синтаксис Python
+    "SIM",      # Упрощение конструкций
+    "ASYNC210", # Блокирующие HTTP-запросы в async-функциях
+    "BLE001",   # Слишком широкий перехват исключений
+    "RET",      # Избыточные return
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Не переписываем существующие миграции ради оформления.
+"alembic/versions/*.py" = ["I", "UP"]
+
+# Сохраняем существующие TypeVar-аннотации.
+"app/repositories/common_repository.py" = ["UP047"]
+"app/services/object_lookup.py" = ["UP047"]
+"app/services/transactions.py" = ["UP047"]
+
+# Сохраняем существующий тип Enum для совместимости.
+"app/models.py" = ["UP042"]
+
+# Сохраняем явный возврат ID после блока транзакции.
+"app/bootstrap_admin.py" = ["RET504"]

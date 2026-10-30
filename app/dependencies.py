@@ -4,7 +4,8 @@
 в обработчиках маршрутов для получения общих ресурсов приложения.
 """
 
-from typing import Annotated, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Annotated
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .database import AsyncSessionLocal
 
 
-async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
+async def get_db_session() -> AsyncGenerator[AsyncSession]:
     """Предоставляет асинхронную сессию базы данных для одного запроса.
 
     Сессия создаётся через AsyncSessionLocal и автоматически закрывается

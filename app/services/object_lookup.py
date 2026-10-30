@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories import common_repository
 
-
 ModelType = TypeVar("ModelType")
 
 

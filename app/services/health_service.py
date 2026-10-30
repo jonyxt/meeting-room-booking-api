@@ -7,7 +7,6 @@ from sqlalchemy import text
 
 from ..database import engine
 
-
 logger = logging.getLogger(__name__)
 
 DATABASE_HEALTH_TIMEOUT_SECONDS = 2.0
@@ -30,7 +29,7 @@ async def check_database_ready() -> bool:
 
         return True
 
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         logger.warning(
             "Database readiness check failed: %s",
             type(exc).__name__,

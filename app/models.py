@@ -5,24 +5,25 @@
 и выполнения запросов к PostgreSQL.
 """
 import datetime
-
 from enum import Enum
-from .database import Base
+
 from sqlalchemy import (
-    String,
-    ForeignKey,
     Boolean,
     CheckConstraint,
-    UniqueConstraint,
-    DateTime,
     Date,
-    Time,
-    Enum as SQLEnum,
+    DateTime,
+    ForeignKey,
     Index,
-    text
+    String,
+    Time,
+    UniqueConstraint,
+    text,
 )
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
+
+from .database import Base
 
 
 class UserRole(str, Enum):

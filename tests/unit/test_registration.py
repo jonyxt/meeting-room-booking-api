@@ -1,6 +1,7 @@
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 
-from unittest.mock import AsyncMock, MagicMock
 from app import models, schemas
 from app.services import auth_service
 

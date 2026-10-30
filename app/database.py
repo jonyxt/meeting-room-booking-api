@@ -3,10 +3,10 @@
 Модуль создает асинхронный SQLAlchemy engine, фабрику асинхронных сессий
 и базовый класс для ORM-моделей приложения.
 """
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base
-from .config import config
 
+from .config import config
 
 engine = create_async_engine(config.DATABASE_URL)
 

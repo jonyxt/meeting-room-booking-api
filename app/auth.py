@@ -4,20 +4,19 @@
 создания и декодирования JWT-токенов, а также FastAPI dependencies
 для получения текущего пользователя и проверки прав администратора.
 """
-import jwt
-import bcrypt
-
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
-from datetime import datetime, timedelta, timezone
+
+import bcrypt
+import jwt
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from . import models
-from .dependencies import get_db_session
 from .config import get_settings
-
+from .dependencies import get_db_session
 
 settings = get_settings()
 
@@ -73,7 +72,7 @@ def create_access_token(user_id: int) -> str:
     Returns:
         Закодированный JWT-токен.
     """
-    expire = datetime.now(timezone.utc) + timedelta(seconds=JWT_EXP_DELTA_SECONDS)
+    expire = datetime.now(UTC) + timedelta(seconds=JWT_EXP_DELTA_SECONDS)
     payload = {
         'sub': str(user_id),
         'exp': expire,
@@ -117,11 +116,12 @@ async def get_current_user(
     try:
         payload = decode_access_token(token)
         user_id = int(payload.get('sub'))
-    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError, TypeError, ValueError):
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError, TypeError,
+                ValueError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Неверный или просроченный токен'
-        )
+        ) from None
     query = select(models.User).where(models.User.id == user_id)
     user = await session.scalar(query)
     if user is None:

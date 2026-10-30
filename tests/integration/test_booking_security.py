@@ -1,11 +1,13 @@
 """Тесты: test_booking_security."""
 
 
-import httpx
-import datetime
-import pytest
 import asyncio
+import datetime
+
+import httpx
+import pytest
 from sqlalchemy import delete
+
 from app import models
 from app.config import config
 from app.database import AsyncSessionLocal, engine
@@ -218,35 +220,39 @@ def test_inactive_room_cannot_be_booked(admin_token):
             await session.commit()
 
         try:
-            # Неактивная комната не должна
-            # присутствовать среди доступных
-            response = httpx.get(
-                f"{BASE_URL}/rooms/available/{date}",
-                headers=auth_headers(token),
-            )
+            async with httpx.AsyncClient(
+                    base_url=BASE_URL,
+                    timeout=20.0,
+            ) as client:
+                # Неактивная комната не должна
+                # присутствовать среди доступных.
+                response = await client.get(
+                    f"/rooms/available/{date}",
+                    headers=auth_headers(token),
+                )
 
-            assert response.status_code == 200
+                assert response.status_code == 200
 
-            available_room_ids = [
-                item["id"]
-                for item in response.json()["rooms"]
-            ]
+                available_room_ids = [
+                    item["id"]
+                    for item in response.json()["rooms"]
+                ]
 
-            assert room_id not in available_room_ids
+                assert room_id not in available_room_ids
 
-            # Прямой запрос на бронирование
-            # также должен быть отклонён
-            response = httpx.post(
-                f"{BASE_URL}/bookings",
-                headers=auth_headers(token),
-                json={
-                    "room_id": room_id,
-                    "time_window_id": slot_id,
-                    "date": date,
-                },
-            )
+                # Прямой запрос на бронирование
+                # также должен быть отклонён.
+                response = await client.post(
+                    "/bookings",
+                    headers=auth_headers(token),
+                    json={
+                        "room_id": room_id,
+                        "time_window_id": slot_id,
+                        "date": date,
+                    },
+                )
 
-            assert response.status_code == 400
+                assert response.status_code == 400
 
         finally:
             # Удаляем только созданные тестом записи

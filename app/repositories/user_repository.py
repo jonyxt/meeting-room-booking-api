@@ -1,7 +1,7 @@
 
 """Операции чтения пользователей из базы данных."""
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import models

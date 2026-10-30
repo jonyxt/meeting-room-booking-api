@@ -11,6 +11,24 @@ permissions:
   contents: read
 
 jobs:
+  lint:
+    name: Ruff Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Check Python code with Ruff
+        uses: astral-sh/ruff-action@v4.1.0
+        with:
+          version: "0.17.3"
+          args: "check --output-format=github"
+          src: "."
+
   tests:
     name: Unit and Integration Tests
     runs-on: ubuntu-latest
@@ -72,7 +90,7 @@ jobs:
 
   publish:
     name: Build and Publish Docker Image
-    needs: tests
+    needs: [lint, tests]
 
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 

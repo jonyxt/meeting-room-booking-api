@@ -1,17 +1,17 @@
 import asyncio
 import os
-import httpx
-import pytest
-import jwt
-
 from uuid import uuid4
+
+import httpx
+import jwt
+import pytest
 from sqlalchemy import text
-from app.config import config
-from app.seed_data import seed_initial_data
 
 from app import auth, models, schemas
 from app.bootstrap_admin import create_initial_admin
+from app.config import config
 from app.database import AsyncSessionLocal, engine
+from app.seed_data import seed_initial_data
 
 
 @pytest.fixture(scope="session")

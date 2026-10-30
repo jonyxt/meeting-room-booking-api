@@ -7,7 +7,6 @@ from fastapi import HTTPException
 from app import models, schemas
 from app.services import auth_service, booking_service, room_service, user_service
 
-
 pytestmark = pytest.mark.asyncio
 
 

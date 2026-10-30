@@ -1,5 +1,7 @@
-import httpx
 from concurrent.futures import ThreadPoolExecutor
+
+import httpx
+
 from tests.integration.helpers import BASE_URL, auth_headers, future_date
 
 

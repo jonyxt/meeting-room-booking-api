@@ -5,10 +5,9 @@ import datetime
 from fastapi import APIRouter
 
 from .. import schemas
-from ..services import booking_service
-from ..auth import CurrentUserDep, AdminUserDep
+from ..auth import AdminUserDep, CurrentUserDep
 from ..dependencies import SessionDep
-
+from ..services import booking_service
 
 router = APIRouter()
 

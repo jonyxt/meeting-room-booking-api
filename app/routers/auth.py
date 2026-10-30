@@ -3,9 +3,8 @@
 from fastapi import APIRouter
 
 from .. import schemas
-from ..services import auth_service
 from ..dependencies import SessionDep
-
+from ..services import auth_service
 
 router = APIRouter()
 

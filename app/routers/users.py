@@ -3,11 +3,10 @@
 from fastapi import APIRouter
 
 from .. import models, schemas
+from ..auth import AdminUserDep, CurrentUserDep
+from ..dependencies import SessionDep
 from ..services import auth_service, user_service
 from ..services.object_lookup import get_db_object_by_id
-from ..auth import CurrentUserDep, AdminUserDep
-from ..dependencies import SessionDep
-
 
 router = APIRouter()
 

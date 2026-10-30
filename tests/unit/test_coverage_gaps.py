@@ -9,8 +9,7 @@ from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.exc import IntegrityError
 
-from app import auth, schemas, seed_data
-from app import bootstrap_admin
+from app import auth, bootstrap_admin, schemas, seed_data
 
 
 @pytest.mark.asyncio

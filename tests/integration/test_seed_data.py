@@ -2,7 +2,7 @@
 """Проверка повторной инициализации начальных данных."""
 
 import pytest
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 
 from app.database import AsyncSessionLocal
 from app.models import Room, TimeWindow

@@ -2,9 +2,11 @@
 
 
 import datetime
+from uuid import uuid4
+
 import jwt
 import pytest
-from uuid import uuid4
+
 from app import auth
 from tests.integration.helpers import auth_headers
 
@@ -77,7 +79,7 @@ def test_expired_jwt_is_rejected(
     assert response.status_code == 200
     user_id = response.json()["id"]
 
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now(datetime.UTC)
 
     valid_token = signed_jwt({
         "sub": str(user_id),
@@ -119,7 +121,7 @@ def test_unsigned_jwt_is_rejected(api_client, admin_token):
         {
             "sub": str(admin_id),
             "exp": (
-                datetime.datetime.now(datetime.timezone.utc)
+                datetime.datetime.now(datetime.UTC)
                 + datetime.timedelta(minutes=5)
             ),
         },
@@ -195,7 +197,7 @@ def test_jwt_with_invalid_subject_is_rejected(
 
     payload = {
         "exp": (
-            datetime.datetime.now(datetime.timezone.utc)
+            datetime.datetime.now(datetime.UTC)
             + datetime.timedelta(minutes=5)
         ),
         **claims,
@@ -277,7 +279,7 @@ def test_jwt_with_future_nbf_is_rejected(
 ):
     """JWT нельзя использовать раньше времени nbf."""
 
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now(datetime.UTC)
 
     token = signed_jwt({
         "sub": "1",
@@ -308,7 +310,7 @@ def test_jwt_with_other_algorithm_is_rejected(
         {
             "sub": "1",
             "exp": (
-                datetime.datetime.now(datetime.timezone.utc)
+                datetime.datetime.now(datetime.UTC)
                 + datetime.timedelta(minutes=5)
             ),
         },
@@ -336,7 +338,7 @@ def test_jwt_role_claim_cannot_escalate_privileges(
         "sub": str(user["id"]),
         "role": "admin",
         "exp": (
-            datetime.datetime.now(datetime.timezone.utc)
+            datetime.datetime.now(datetime.UTC)
             + datetime.timedelta(minutes=5)
         ),
     })

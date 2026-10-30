@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from . import models
 from .database import AsyncSessionLocal, engine
 
-
 INITIAL_ROOMS = {
     "Большой конференц зал": "До 25 человек",
     "Средний конференц зал": "До 15 человек",
