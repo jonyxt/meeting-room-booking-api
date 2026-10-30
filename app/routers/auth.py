@@ -6,13 +6,24 @@ from .. import schemas
 from ..dependencies import SessionDep
 from ..services import auth_service
 
-router = APIRouter()
+router = APIRouter(tags=["Authentication"])
+
 
 @router.post(
-    '/register',
+    "/register",
     response_model=schemas.GetUserResponse,
-    description='Регистрирует нового пользователя с ролью employee.'
+    summary="Регистрация сотрудника",
+    description=(
+        "Создаёт пользователя с ролью `employee`. "
+        "Роль администратора через публичную регистрацию получить нельзя."
+    ),
+    responses={
+        409: {
+            "description": "Имя пользователя, email или телефон уже заняты."
+        },
+    },
 )
+
 async def register(
         user_data: schemas.RegisterRequest,
         session: SessionDep
@@ -20,12 +31,24 @@ async def register(
     return await auth_service.register_user(session, user_data)
 
 
+
 @router.post(
-    '/login',
+    "/login",
     response_model=schemas.LoginResponse,
-    description='Проверяет логин и пароль пользователя и возвращает '
-                'JWT-токен для доступа к защищенным endpoint.'
+    summary="Вход в систему",
+    description=(
+        "Проверяет имя пользователя и пароль. "
+        "При успешной аутентификации возвращает JWT access token. "
+        "Токен необходимо передавать в заголовке "
+        "`Authorization: Bearer <token>`."
+    ),
+    responses={
+        401: {
+            "description": "Неверный логин или пароль."
+        },
+    },
 )
+
 async def login(
         login_data: schemas.LoginRequest,
         session: SessionDep

@@ -1,7 +1,7 @@
 [project]
-name = "shift-test-task"
-version = "0.1.0"
-description = "Test task for Shift"
+name = "meeting-room-booking-api"
+version = "0.9.0"
+description = "REST API for meeting room reservations built with FastAPI and PostgreSQL"
 authors = [
     {name = "Artem Osipenko",email = "Jonyxt@gmail.com"}
 ]

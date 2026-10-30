@@ -12,11 +12,12 @@ from ..auth import CurrentUserDep
 from ..dependencies import SessionDep
 from ..services import room_service
 
-router = APIRouter()
+router = APIRouter(tags=["Rooms"])
 
 @router.get(
     '/rooms/available/{date}',
     response_model=schemas.AvailableRoomsResponse,
+    summary='Найти свободные слоты на дату',
     description='Возвращает доступные комнаты и свободные временные слоты на выбранную дату.'
 )
 async def get_date_available_bookings(
@@ -30,6 +31,7 @@ async def get_date_available_bookings(
 @router.get(
     '/rooms',
     response_model=schemas.RoomsResponse,
+    summary='Получить список переговорных',
     description='Возвращает список всех переговорных комнат. Требует авторизации.'
 )
 async def get_all_rooms_info(
@@ -42,6 +44,7 @@ async def get_all_rooms_info(
 @router.get(
     '/rooms/{room_id}',
     response_model=schemas.RoomResponse,
+    summary='Получить информацию о переговорной',
     description='Возвращает переговорную комнату по идентификатору. Требует авторизации.'
 )
 async def get_room_info_by_id(

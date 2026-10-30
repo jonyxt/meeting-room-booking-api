@@ -1,8 +1,5 @@
-"""Точка входа FastAPI-приложения.
 
-Создаёт экземпляр приложения, подключает жизненный цикл
-и регистрирует HTTP-маршруты.
-"""
+"""Создание FastAPI-приложения и регистрация маршрутов."""
 
 from fastapi import FastAPI
 
@@ -14,13 +11,44 @@ from .routers.rooms import router as rooms_router
 from .routers.users import router as users_router
 
 app = FastAPI(
-    title='Booking service',
-    description='Тестовое задание по бронированию конференц залов',
-    lifespan=lifespan
+    title="Meeting Room Booking API",
+    description=(
+        "REST API для бронирования переговорных комнат.\n\n"
+        "Сотрудники могут просматривать доступные временные слоты, "
+        "создавать и отменять бронирования. Администраторы "
+        "управляют пользователями и имеют доступ ко всем бронированиям.\n\n"
+        "Для защищённых маршрутов используется JWT Bearer-токен. "
+        "Получить его можно через `POST /login`, затем указать "
+        "в окне **Authorize**."
+    ),
+    version="0.9.0",
+    openapi_tags=[
+        {
+            "name": "Authentication",
+            "description": "Регистрация сотрудников и получение JWT-токена.",
+        },
+        {
+            "name": "Users",
+            "description": "Профили пользователей и управление ролями.",
+        },
+        {
+            "name": "Rooms",
+            "description": "Переговорные комнаты и свободные временные слоты.",
+        },
+        {
+            "name": "Bookings",
+            "description": "Создание, просмотр и отмена бронирований.",
+        },
+        {
+            "name": "Health",
+            "description": "Проверка доступности приложения и PostgreSQL.",
+        },
+    ],
+    lifespan=lifespan,
 )
 
 app.include_router(auth_router)
 app.include_router(users_router)
-app.include_router(bookings_router)
 app.include_router(rooms_router)
+app.include_router(bookings_router)
 app.include_router(health_router)

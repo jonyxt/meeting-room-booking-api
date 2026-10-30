@@ -127,8 +127,8 @@ jobs:
           push: true
 
           tags: |
-            ghcr.io/jonyxt/shift_test_task:sha-${{ github.sha }}
-            ghcr.io/jonyxt/shift_test_task:main
+            ghcr.io/jonyxt/meeting-room-booking-api:sha-${{ github.sha }}
+            ghcr.io/jonyxt/meeting-room-booking-api:main
 
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}

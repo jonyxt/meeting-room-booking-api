@@ -9,13 +9,30 @@ from ..auth import AdminUserDep, CurrentUserDep
 from ..dependencies import SessionDep
 from ..services import booking_service
 
-router = APIRouter()
+router = APIRouter(tags=["Bookings"])
+
 
 @router.post(
-    '/bookings',
+    "/bookings",
     response_model=schemas.GetBookingResponse,
-    description='Создает бронирование переговорной комнаты на выбранную дату и временной слот.'
+    summary="Создать бронирование",
+    description=(
+        "Бронирует переговорную комнату на указанную дату и временной слот.\n\n"
+        "Комната должна быть активной, а слот — принадлежать этой комнате. "
+        "Бронирование на прошедшую дату запрещено.\n\n"
+        "Идентификаторы комнат и свободных слотов можно получить "
+        "через `GET /rooms/available/{date}`."
+    ),
+    responses={
+        400: {
+            "description": "Недопустимая дата, комната или временной слот."
+        },
+        409: {
+            "description": "Временной слот уже забронирован."
+        },
+    },
 )
+
 async def book_room(
         booking_data: schemas.CreateBookingRequest,
         current_user: CurrentUserDep,
@@ -27,6 +44,7 @@ async def book_room(
 @router.get(
     '/bookings/all',
     response_model=schemas.GetBookingsResponse,
+    summary='Получить все бронирования',
     description='Возвращает все бронирования. Можно отфильтровать результат '
                 'по query-параметру date. Доступно только администратору.'
 )
@@ -41,6 +59,7 @@ async def get_all_bookings(
 @router.get(
     '/bookings/{booking_id}',
     response_model=schemas.GetBookingResponse,
+    summary='Получить бронирование',
     description='Возвращает бронирование по идентификатору. Сотрудник видит '
                 'только свои бронирования, администратор — любые.'
 )
@@ -57,6 +76,7 @@ async def book_room_info(
 @router.get(
     '/bookings',
     response_model=schemas.GetBookingsResponse,
+    summary='Получить свои бронирования',
     description='Возвращает все бронирования текущего авторизованного пользователя.'
 )
 async def get_all_user_bookings(
@@ -68,12 +88,34 @@ async def get_all_user_bookings(
     )
 
 
+
 @router.patch(
-    '/bookings/cancel/{booking_id}',
+    "/bookings/cancel/{booking_id}",
     response_model=schemas.CancelResponse,
-    description='Отменяет бронирование. Сотрудник может отменить только свое '
-                'бронирование, администратор — любое.'
+    summary="Отменить бронирование",
+    description=(
+        "Сотрудник может отменить собственное бронирование, "
+        "администратор — любое.\n\n"
+        "При отмене бронирование помечается неактивным. "
+        "Запись сохраняется в истории вместе со временем отмены "
+        "и пользователем, выполнившим операцию."
+    ),
+    responses={
+        400: {
+            "description": "Бронирование уже отменено."
+        },
+        403: {
+            "description": "Недостаточно прав для отмены."
+        },
+        404: {
+            "description": "Бронирование не найдено."
+        },
+        409: {
+            "description": "Конфликт данных при сохранении изменений."
+        },
+    },
 )
+
 async def book_room_update(
         current_user: CurrentUserDep,
         session: SessionDep,

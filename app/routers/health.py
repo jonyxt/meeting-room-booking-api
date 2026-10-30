@@ -10,7 +10,10 @@ router = APIRouter(
 )
 
 
-@router.get("/live")
+@router.get(
+    "/live",
+    summary='Проверить работу приложения'
+)
 async def health_live():
     """Проверяет, отвечает ли процесс приложения."""
 
@@ -19,6 +22,7 @@ async def health_live():
 
 @router.get(
     "/ready",
+    summary='Проверить готовность приложения',
     responses={
         503: {
             "description": "Service is not ready",

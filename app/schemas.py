@@ -18,6 +18,19 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     phone: str | None = Field(default=None, max_length=12)
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "username": "employee_demo",
+                    "email": "employee@example.com",
+                    "password": "example_pass_123",
+                    "phone": None,
+                }
+            ]
+        }
+    )
+
     @field_validator('password')
     @classmethod
     def validate_password_bytes(cls, value: str) -> str:
@@ -31,6 +44,18 @@ class LoginRequest(BaseModel):
     """Данные для получения JWT-токена."""
     username: str
     password: str
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "username": "employee_demo",
+                    "password": "example_pass_123",
+                }
+            ]
+        }
+    )
+
 
 class LoginResponse(BaseModel):
     """Ответ с JWT-токеном после успешной аутентификации."""
@@ -63,6 +88,19 @@ class CreateBookingRequest(BaseModel):
     room_id: int
     time_window_id: int
     date: datetime.date
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "room_id": 1,
+                    "time_window_id": 1,
+                    "date": "2030-06-15",
+                }
+            ]
+        }
+    )
+
 
 class UserShortResponse(BaseModel):
     """Краткое представление пользователя во вложенных ответах."""
